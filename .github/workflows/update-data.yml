@@ -14,9 +14,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Clone upstream HowToCook data
+        run: |
+          # 克隆官方仓库的数据目录
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/Anduin2017/HowToCook.git upstream
+          cd upstream
+          git sparse-checkout set dishes tips
+          cd ..
+          # 复制数据目录到当前项目
+          cp -r upstream/dishes ./
+          cp -r upstream/tips ./
+          rm -rf upstream
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          cd scripts
+          npm install
+
+      - name: Parse markdown and generate data
+        run: |
+          # 解析 markdown 生成 JSON
+          node scripts/parse-markdown.js
+          # 渲染 tips HTML
+          node scripts/render-tips-html.js
+
       - name: Generate version file
         run: |
-          # 生成版本文件用于客户端检查更新
           echo "{\"version\": \"$(date +%Y%m%d%H%M%S)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app/src/assets/data/version.json
 
       - name: Upload to Cloudflare R2
@@ -31,6 +59,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ Data uploaded to Cloudflare R2 successfully!"
-          echo "Files uploaded:"
+          echo "✅ Data synced from upstream and uploaded to R2!"
+          echo "Files:"
           ls -la app/src/assets/data/
