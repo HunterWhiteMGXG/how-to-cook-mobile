@@ -1,17 +1,22 @@
 import { View, Text, RichText } from '@tarojs/components'
-import { useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from '@tarojs/taro'
-import tipsData from '@/assets/data/tips.json'
+import { getTips } from '@/services/dataService'
 import './index.scss'
 
 export default function KnowledgeDetail() {
   const router = useRouter()
   const { id: encodedId } = router.params
   const id = encodedId ? decodeURIComponent(encodedId) : ''
+  const [tip, setTip] = useState<any>(null)
 
-  // 获取当前文章
-  const tip = useMemo(() => {
-    return tipsData.tips.find(t => t.id === id)
+  useEffect(() => {
+    getTips().then(data => {
+      if (data && data.tips) {
+        const found = data.tips.find(t => t.id === id)
+        setTip(found)
+      }
+    })
   }, [id])
 
   // 使用预渲染的 HTML

@@ -63,6 +63,17 @@ const config = {
     router: {
       mode: 'hash'
     },
+    devServer: {
+      proxy: {
+        '/api': {
+          target: 'https://howtocook.hunter-white.com',
+          changeOrigin: true,
+          pathRewrite: {
+            '^/api': ''
+          }
+        }
+      }
+    },
     output: {
       filename: 'js/[name].[hash:8].js',
       chunkFilename: 'js/[name].[chunkhash:8].js'

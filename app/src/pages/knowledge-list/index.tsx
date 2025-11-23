@@ -1,23 +1,32 @@
 import { View, Text } from '@tarojs/components'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import tipsData from '@/assets/data/tips.json'
+import { getTips } from '@/services/dataService'
 import './index.scss'
 
 export default function KnowledgeList() {
   const router = useRouter()
   const { category: initialCategory } = router.params
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'basic')
+  const [tipsData, setTipsData] = useState<any>({ tips: [], categories: [] })
+
+  useEffect(() => {
+    getTips().then(data => {
+      if (data && data.tips) {
+        setTipsData(data)
+      }
+    })
+  }, [])
 
   // 获取当前分类的文章
   const currentTips = useMemo(() => {
     return tipsData.tips.filter(tip => tip.category === selectedCategory)
-  }, [selectedCategory])
+  }, [selectedCategory, tipsData])
 
   // 获取当前分类信息
   const currentCategoryInfo = useMemo(() => {
     return tipsData.categories.find(cat => cat.id === selectedCategory)
-  }, [selectedCategory])
+  }, [selectedCategory, tipsData])
 
   // 导航到知识详情
   const handleTipClick = (tipId: string) => {

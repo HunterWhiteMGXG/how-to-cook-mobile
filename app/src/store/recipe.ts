@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import Taro from '@tarojs/taro'
 import type { Recipe, Category, RecipeFilters } from '@/types'
-import { getRecipes, getCategories } from '@/services/dataService'
+import { getRecipes, getCategories, getRecipesCached, getCategoriesCached } from '@/services/dataService'
 
 // 从本地存储加载收藏
 const loadFavorites = (): string[] => {
@@ -50,13 +50,18 @@ interface RecipeState {
   loadData: () => Promise<void>
 }
 
+// 初始化时同步读取缓存
+const initialRecipes = getRecipesCached() || []
+const initialCategories = getCategoriesCached() || []
+const hasInitialData = initialRecipes.length > 0 && initialCategories.length > 0
+
 export const useRecipeStore = create<RecipeState>((set, get) => ({
-  recipes: [],
-  categories: [],
+  recipes: initialRecipes,
+  categories: initialCategories,
   currentRecipe: null,
   favorites: loadFavorites(),
   isLoading: false,
-  isDataLoaded: false,
+  isDataLoaded: hasInitialData,
   filters: {},
   sortBy: 'name',
   selectedCategoryId: null,
@@ -77,24 +82,17 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
   },
   isFavorite: (recipeId) => get().favorites.includes(recipeId),
   loadData: async () => {
-    const { isDataLoaded, isLoading } = get()
-    if (isDataLoaded || isLoading) return
+    const { isLoading } = get()
+    if (isLoading) return
 
-    set({ isLoading: true })
-    try {
-      const [recipes, categories] = await Promise.all([
-        getRecipes(),
-        getCategories(),
-      ])
-      set({
-        recipes,
-        categories,
-        isDataLoaded: true,
-        isLoading: false,
-      })
-    } catch (error) {
+    // 后台检查更新（不阻塞 UI）
+    Promise.all([
+      getRecipes(),
+      getCategories(),
+    ]).then(([recipes, categories]) => {
+      set({ recipes, categories, isDataLoaded: true })
+    }).catch(error => {
       console.error('Failed to load data:', error)
-      set({ isLoading: false })
-    }
+    })
   },
 }))

@@ -16,10 +16,13 @@ jobs:
 
       - name: Clone upstream HowToCook data
         run: |
-          # 克隆官方仓库的数据目录
-          git clone --depth 1 --filter=blob:none --sparse https://github.com/Anduin2017/HowToCook.git upstream
+          # 安装 Git LFS
+          git lfs install
+          # 克隆官方仓库（需要完整克隆以获取 LFS 文件）
+          git clone --depth 1 https://github.com/Anduin2017/HowToCook.git upstream
           cd upstream
-          git sparse-checkout set dishes tips
+          # 拉取 LFS 文件
+          git lfs pull
           cd ..
           # 复制数据目录到当前项目
           cp -r upstream/dishes ./
@@ -49,7 +52,19 @@ jobs:
         run: |
           echo "{\"version\": \"$(date +%Y%m%d%H%M%S)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app/src/assets/data/version.json
 
-      - name: Upload to Cloudflare R2
+      - name: Collect images from dishes
+        run: |
+          mkdir -p images
+          # 复制所有图片文件，保持目录结构
+          find dishes -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" -o -iname "*.webp" \) | while read file; do
+            rel_path="${file#dishes/}"
+            dest_dir="images/$(dirname "$rel_path")"
+            mkdir -p "$dest_dir"
+            cp "$file" "$dest_dir/"
+          done
+          echo "Collected $(find images -type f | wc -l) images"
+
+      - name: Upload data to Cloudflare R2
         uses: ryand56/r2-upload-action@latest
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
@@ -59,8 +74,19 @@ jobs:
           source-dir: app/src/assets/data
           destination-dir: ./
 
+      - name: Upload images to Cloudflare R2
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
+          source-dir: images
+          destination-dir: images
+
       - name: Summary
         run: |
           echo "✅ Data synced from upstream and uploaded to R2!"
-          echo "Files:"
+          echo "Data files:"
           ls -la app/src/assets/data/
+          echo "Images: $(find images -type f | wc -l) files"

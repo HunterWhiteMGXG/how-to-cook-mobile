@@ -1,27 +1,12 @@
 import { View, Text } from "@tarojs/components";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import Taro from "@tarojs/taro";
 import { useRecipeStore } from "@/store";
 import "./index.scss";
 
-// 内置版本信息
-const versionData = require("@/assets/data/version.json");
-
 export default function Index() {
-  const { recipes, categories, favorites, isLoading, loadData } =
+  const { recipes, categories, favorites, loadData } =
     useRecipeStore();
-
-  // 格式化更新时间
-  const updateTime = useMemo(() => {
-    if (versionData.updatedAt) {
-      const date = new Date(versionData.updatedAt);
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}-${String(date.getDate()).padStart(2, "0")}`;
-    }
-    return "";
-  }, []);
 
   useEffect(() => {
     // 加载菜谱和分类数据
@@ -46,9 +31,6 @@ export default function Index() {
     <View className="index">
       <View className="header">
         <Text className="title">HowToCook</Text>
-        {updateTime && (
-          <Text className="update-time">最近更新：{updateTime}</Text>
-        )}
       </View>
 
       <View className="categories">

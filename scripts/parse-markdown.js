@@ -15,8 +15,8 @@ const CONFIG = {
   outputDir: path.join(__dirname, '..', 'app', 'src', 'assets', 'data'),
   outputFile: 'recipes.json',
   categoriesFile: 'categories.json',
-  // 图片CDN配置（使用GitHub Media支持LFS）
-  cdnBaseUrl: 'https://media.githubusercontent.com/media/Anduin2017/HowToCook/master/dishes/',
+  // 图片CDN配置（使用 Cloudflare R2）
+  cdnBaseUrl: 'https://howtocook.hunter-white.com/images/',
 };
 
 // 分类映射

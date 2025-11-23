@@ -7,8 +7,8 @@ const isDev = typeof __TARO_ENV_DEV__ !== 'undefined' ? __TARO_ENV_DEV__ : true
 // 数据配置
 const DATA_CONFIG = {
   // 远程数据 URL - Cloudflare R2 自定义域名
-  // 本地测试：使用 /static/data 路径（需要 src/static/data 目录）
-  baseUrl: isDev ? '/static/data' : 'https://howtocook.hunter-white.com',
+  // 开发环境通过代理访问，生产环境直接访问 R2
+  baseUrl: isDev ? '/api' : 'https://howtocook.hunter-white.com',
   // 缓存版本号
   version: '1.0.0',
   // 缓存有效期（毫秒）- 默认 24 小时
@@ -66,18 +66,12 @@ async function fetchRemoteData<T>(endpoint: string): Promise<T | null> {
 
   try {
     const url = `${DATA_CONFIG.baseUrl}/${endpoint}`
-    const response = await Taro.request({
-      url,
-      method: 'GET',
-      timeout: 10000,
-    })
-
-    if (response.statusCode === 200 && response.data) {
-      return response.data as T
+    const res = await fetch(url)
+    if (res.ok) {
+      return await res.json() as T
     }
     return null
-  } catch (error) {
-    console.warn(`Failed to fetch ${endpoint}:`, error)
+  } catch {
     return null
   }
 }
@@ -87,14 +81,10 @@ async function checkRemoteVersion(): Promise<string | null> {
   if (!DATA_CONFIG.baseUrl) return null
 
   try {
-    const response = await Taro.request({
-      url: `${DATA_CONFIG.baseUrl}/version.json`,
-      method: 'GET',
-      timeout: 5000,
-    })
-
-    if (response.statusCode === 200 && response.data) {
-      return (response.data as any).version || null
+    const res = await fetch(`${DATA_CONFIG.baseUrl}/version.json`)
+    if (res.ok) {
+      const data = await res.json()
+      return data.version || null
     }
     return null
   } catch {
@@ -158,6 +148,11 @@ function saveVersion(version: string): void {
   }
 }
 
+// 获取菜谱数据（立即返回缓存）
+export function getRecipesCached(): any[] | null {
+  return getFromCache<any[]>(CACHE_KEYS.recipes)
+}
+
 // 获取菜谱数据
 export async function getRecipes(): Promise<any[]> {
   const cacheKey = CACHE_KEYS.recipes
@@ -181,11 +176,12 @@ export async function getRecipes(): Promise<any[]> {
   }
 
   // 3. 使用缓存（如果有）
-  if (cached) return cached
+  return cached || []
+}
 
-  // 4. 使用内置数据兜底
-  const fallback = require('@/assets/data/recipes.json')
-  return fallback
+// 获取分类数据（立即返回缓存）
+export function getCategoriesCached(): any[] | null {
+  return getFromCache<any[]>(CACHE_KEYS.categories)
 }
 
 // 获取分类数据
@@ -205,10 +201,7 @@ export async function getCategories(): Promise<any[]> {
     }
   }
 
-  if (cached) return cached
-
-  const fallback = require('@/assets/data/categories.json')
-  return fallback
+  return cached || []
 }
 
 // 获取知识文章数据
@@ -228,10 +221,7 @@ export async function getTips(): Promise<any> {
     }
   }
 
-  if (cached) return cached
-
-  const fallback = require('@/assets/data/tips.json')
-  return fallback
+  return cached || {}
 }
 
 // 预加载所有数据
@@ -259,14 +249,10 @@ export async function checkForUpdates(): Promise<boolean> {
   if (!DATA_CONFIG.baseUrl) return false
 
   try {
-    const response = await Taro.request({
-      url: `${DATA_CONFIG.baseUrl}/version.json`,
-      method: 'GET',
-      timeout: 5000,
-    })
-
-    if (response.statusCode === 200 && response.data) {
-      const remoteVersion = (response.data as any).version
+    const res = await fetch(`${DATA_CONFIG.baseUrl}/version.json`)
+    if (res.ok) {
+      const data = await res.json()
+      const remoteVersion = data.version
       const localVersion = Taro.getStorageSync(CACHE_KEYS.version) || ''
 
       if (remoteVersion !== localVersion) {
