@@ -43,8 +43,10 @@ jobs:
 
       - name: Parse markdown and generate data
         run: |
-          # 解析 markdown 生成 JSON
+          # 解析菜谱 markdown 生成 JSON
           node scripts/parse-markdown.js
+          # 解析知识库 tips 生成 JSON
+          node scripts/parse-tips.js
           # 渲染 tips HTML
           node scripts/render-tips-html.js
 
