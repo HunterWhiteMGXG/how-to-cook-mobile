@@ -1,0 +1,366 @@
+@import '../../styles/design-tokens.scss';
+
+.recipe-detail {
+  background-color: $background;
+  min-height: 100vh;
+  padding-bottom: 80px; // 为底部按钮留空间
+
+  .cover-image-container {
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #FFE9DC 0%, #FFF5EF 100%);
+    position: relative;
+
+    .cover-image {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      background-size: cover !important;
+      background-position: center !important;
+
+      img {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
+      }
+    }
+
+    // 渐变遮罩，让图片与下方内容过渡更自然
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent, rgba(255, 138, 61, 0.1));
+    }
+  }
+
+  .hero {
+    background: $primary-gradient;
+    padding: $space-3xl $space-lg $space-2xl;
+    text-align: center;
+    color: $surface;
+    position: relative;
+    overflow: hidden;
+
+    // 装饰性背景图案
+    &::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .recipe-name {
+      display: block;
+      font-size: $font-h2;
+      font-weight: $font-bold;
+      margin-bottom: $space-md;
+      line-height: $line-height-tight;
+      position: relative;
+      z-index: 1;
+      letter-spacing: -0.5px;
+    }
+
+    .recipe-intro {
+      display: block;
+      font-size: $font-caption;
+      line-height: $line-height-relaxed;
+      opacity: 0.95;
+      position: relative;
+      z-index: 1;
+      font-weight: $font-medium;
+    }
+  }
+
+  .info-bar {
+    background: $surface;
+    padding: $space-lg;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: $shadow-light;
+
+    .info-item {
+      text-align: center;
+      flex: 1;
+
+      .info-label {
+        display: block;
+        font-size: $font-small;
+        color: $text-tertiary;
+        margin-bottom: $space-xs;
+        font-weight: $font-medium;
+      }
+
+      .info-value {
+        display: block;
+        font-size: $font-body;
+        font-weight: $font-semibold;
+        color: $primary-500;
+      }
+
+      &.favorite-btn {
+        cursor: pointer;
+        transition: all $transition-base;
+        border-radius: $radius-sm;
+        padding: $space-sm;
+        margin: -$space-sm;
+
+        &:active {
+          transform: scale(0.95);
+          background: rgba($primary-500, 0.1);
+        }
+
+        &.active {
+          .info-value {
+            color: #FFD700;
+          }
+        }
+      }
+    }
+  }
+
+  .content {
+    padding: $space-lg;
+
+    .section {
+      @include card;
+      padding: $space-lg;
+      margin-bottom: $space-md;
+
+      .section-title {
+        display: block;
+        font-size: $font-h3;
+        font-weight: $font-semibold;
+        color: $text-primary;
+        margin-bottom: $space-lg;
+        display: flex;
+        align-items: center;
+        gap: $space-sm;
+      }
+
+      // 食材列表
+      .ingredients-list {
+        .ingredient-item {
+          padding: $space-md 0;
+          border-bottom: 1px solid $divider;
+          display: flex;
+          align-items: center;
+          gap: $space-sm;
+          cursor: pointer;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:active {
+            background: rgba($primary-500, 0.05);
+          }
+
+          &.checked {
+            .ingredient-checkbox {
+              background: $primary-500;
+              border-color: $primary-500;
+            }
+          }
+
+          .ingredient-checkbox {
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            background: white;
+            flex-shrink: 0;
+          }
+
+          .ingredient-name {
+            font-size: $font-caption;
+            color: $text-primary;
+            font-weight: $font-medium;
+            flex: 1;
+            text-align: left;
+
+            &.optional {
+              color: $text-secondary;
+            }
+          }
+
+          .ingredient-amount {
+            font-size: $font-caption;
+            color: $primary-500;
+            font-weight: $font-semibold;
+            white-space: nowrap;
+            flex-shrink: 0;
+          }
+        }
+      }
+
+      // 步骤列表
+      .steps-list {
+        .step-item {
+          margin-bottom: $space-2xl;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: $primary-500;
+            color: $surface;
+            border-radius: 50%;
+            font-size: $font-small;
+            font-weight: $font-bold;
+            margin-bottom: $space-md;
+            box-shadow: 0 2px 4px rgba(255, 138, 61, 0.2);
+          }
+
+          .step-text {
+            display: block;
+            font-size: $font-caption;
+            line-height: $line-height-loose;
+            color: $text-primary;
+            margin-bottom: $space-md;
+          }
+
+          .step-images {
+            display: flex;
+            gap: $space-sm;
+            flex-wrap: wrap;
+
+            .step-image {
+              width: 100px;
+              height: 100px;
+              background: $background;
+              border-radius: $radius-sm;
+              overflow: hidden;
+            }
+          }
+        }
+      }
+
+      // 分量计算和小贴士
+      .calculation-box,
+      .tips-box {
+        background: linear-gradient(135deg, #FFF9F5 0%, #FFFCFA 100%);
+        padding: $space-lg;
+        border-radius: $radius-md;
+        border-left: 4px solid $primary-500;
+        position: relative;
+
+        &::before {
+          content: '';
+          position: absolute;
+          top: $space-lg;
+          right: $space-lg;
+          width: 40px;
+          height: 40px;
+          background: rgba(255, 138, 61, 0.05);
+          border-radius: 50%;
+        }
+      }
+
+      .calculation-text,
+      .tips-text {
+        font-size: $font-caption;
+        line-height: 2.2;
+        color: $text-primary;
+        white-space: pre-wrap;
+        position: relative;
+        z-index: 1;
+        display: block;
+      }
+
+      // 图片网格
+      .images-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: $space-md;
+      }
+
+      .recipe-image {
+        width: 100%;
+        height: auto;
+        border-radius: $radius-md;
+        background: $background;
+        overflow: hidden;
+        box-shadow: $shadow-light;
+        transition: transform $transition-base;
+
+        &:active {
+          transform: scale(0.98);
+        }
+      }
+    }
+  }
+
+  // 底部操作按钮
+  .actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: $surface;
+    padding: $space-md $space-lg;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    gap: $space-md;
+    z-index: $z-fixed;
+    // 毛玻璃效果
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+
+    .action-btn {
+      flex: 1;
+      height: $min-touch-target + 4px;
+      line-height: $min-touch-target + 4px;
+      text-align: center;
+      border-radius: $radius-xl;
+      font-size: $font-caption;
+      font-weight: $font-semibold;
+      cursor: pointer;
+      transition: all $transition-base;
+
+      &:active {
+        transform: scale(0.98);
+      }
+
+      &.primary {
+        @include button-primary;
+      }
+
+      &.secondary {
+        @include button-secondary;
+      }
+    }
+  }
+}

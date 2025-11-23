@@ -1,0 +1,48 @@
+/* 导入设计系统 */
+@import './styles/design-tokens.scss';
+
+/* 全局样式 */
+page {
+  background-color: $background;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  color: $text-primary;
+  font-size: $font-body;
+  line-height: $line-height-normal;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 平滑滚动 */
+view,
+scroll-view {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 按钮重置 */
+button {
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 输入框重置 */
+input,
+textarea {
+  outline: none;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* 图片默认样式 */
+image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

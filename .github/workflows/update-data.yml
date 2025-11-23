@@ -1,0 +1,84 @@
+name: Update App Data
+
+on:
+  # 每周一凌晨 2 点（UTC）运行
+  schedule:
+    - cron: '0 2 * * 1'
+  # 也可以手动触发
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Pull latest from upstream (if fork)
+        run: |
+          # 如果是 fork，可以在这里添加拉取上游的逻辑
+          # git remote add upstream https://github.com/Anduin2017/HowToCook.git
+          # git fetch upstream
+          # git merge upstream/master --no-edit
+          echo "Skipping upstream pull for now"
+
+      - name: Parse markdown and generate data
+        run: |
+          # 解析 markdown 生成 JSON
+          node scripts/parse-markdown.js
+
+          # 渲染 tips HTML
+          node scripts/render-tips-html.js
+
+      - name: Generate version file
+        run: |
+          # 生成版本文件用于客户端检查更新
+          echo "{\"version\": \"$(date +%Y%m%d%H%M%S)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app/src/assets/data/version.json
+
+      - name: Upload to Cloudflare R2
+        uses: ryand56/r2-upload-action@latest
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
+          source-dir: app/src/assets/data
+          destination-dir: ./
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet app/src/assets/data/; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add app/src/assets/data/
+          git commit -m "[ci skip] Auto-update recipe data $(date +%Y-%m-%d)"
+          git push
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.check_changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Data updated successfully!"
+          else
+            echo "ℹ️ No changes detected in data files."
+          fi

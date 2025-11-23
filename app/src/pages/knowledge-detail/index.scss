@@ -1,0 +1,210 @@
+@import '../../styles/design-tokens.scss';
+
+.knowledge-detail {
+  min-height: 100vh;
+  background: $background;
+  padding: $space-lg;
+
+  .header {
+    margin-bottom: $space-lg;
+
+    .title {
+      display: block;
+      font-size: $font-h2;
+      font-weight: $font-bold;
+      color: $text-primary;
+      line-height: 1.4;
+    }
+  }
+
+  .content {
+    background: $surface;
+    border-radius: $radius-md;
+    padding: $space-lg;
+    box-shadow: $shadow-light;
+
+    // Markdown 渲染样式
+    h1 {
+      font-size: $font-body;
+      font-weight: $font-bold;
+      color: $text-primary;
+      margin: 0 0 $space-md 0;
+      padding-bottom: $space-xs;
+      border-bottom: 1px solid $primary-500;
+    }
+
+    h2 {
+      font-size: $font-caption;
+      font-weight: $font-bold;
+      color: $text-primary;
+      margin: $space-lg 0 $space-sm 0;
+      padding-bottom: $space-xs;
+      border-bottom: 1px solid $divider;
+    }
+
+    h3 {
+      font-size: $font-caption;
+      font-weight: $font-semibold;
+      color: $text-primary;
+      margin: $space-md 0 $space-sm 0;
+    }
+
+    h4 {
+      font-size: $font-small;
+      font-weight: $font-semibold;
+      color: $text-primary;
+      margin: $space-sm 0 $space-xs 0;
+    }
+
+    h5, h6 {
+      font-size: $font-small;
+      font-weight: $font-medium;
+      color: $text-secondary;
+      margin: $space-sm 0 $space-xs 0;
+    }
+
+    p {
+      font-size: $font-caption;
+      color: $text-secondary;
+      line-height: 1.8;
+      margin: 0 0 $space-md 0;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    ul, ol {
+      margin: $space-sm 0 $space-md 0;
+      padding-left: $space-xl;
+    }
+
+    ul {
+      list-style-type: disc;
+    }
+
+    ol {
+      list-style-type: decimal;
+    }
+
+    li {
+      font-size: $font-caption;
+      color: $text-secondary;
+      line-height: 1.8;
+      margin-bottom: $space-xs;
+      padding-left: $space-xs;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    strong {
+      color: $text-primary;
+      font-weight: $font-semibold;
+    }
+
+    em {
+      font-style: italic;
+      color: $text-secondary;
+    }
+
+    code {
+      background: rgba($primary-500, 0.1);
+      color: $primary-600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: $font-small;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    }
+
+    pre {
+      background: #f8f8f8;
+      border-radius: $radius-sm;
+      padding: $space-md;
+      overflow-x: auto;
+      margin: $space-md 0;
+      border: 1px solid $border;
+
+      code {
+        background: none;
+        padding: 0;
+        color: $text-primary;
+        font-size: $font-small;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+    }
+
+    .link {
+      color: $primary-500;
+      font-weight: $font-medium;
+    }
+
+    // 专业术语样式
+    .term-item {
+      display: flex;
+      flex-direction: column;
+      padding: $space-sm 0;
+      border-bottom: 1px solid $divider;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .term-name {
+        font-size: $font-caption;
+        font-weight: $font-semibold;
+        color: $primary-600;
+        margin-bottom: $space-xs;
+      }
+
+      .term-desc {
+        font-size: $font-small;
+        color: $text-secondary;
+        line-height: 1.6;
+      }
+    }
+
+    // 表格样式
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: $space-md 0;
+      font-size: $font-small;
+      overflow-x: auto;
+      display: block;
+
+      thead {
+        background: rgba($primary-500, 0.1);
+      }
+
+      th, td {
+        border: 1px solid $border;
+        padding: $space-sm $space-md;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      th {
+        font-weight: $font-semibold;
+        color: $text-primary;
+      }
+
+      td {
+        color: $text-secondary;
+      }
+
+      tr:nth-child(even) {
+        background: rgba($background, 0.5);
+      }
+    }
+  }
+
+  .empty {
+    padding: $space-2xl;
+    text-align: center;
+    color: $text-tertiary;
+  }
+}

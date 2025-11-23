@@ -1,0 +1,119 @@
+@import '../../styles/design-tokens.scss';
+
+.knowledge-list {
+  min-height: 100vh;
+  background: $background;
+  padding: $space-lg;
+
+  .header {
+    margin-bottom: $space-lg;
+
+    .title {
+      display: block;
+      font-size: $font-h2;
+      font-weight: $font-bold;
+      color: $text-primary;
+      margin-bottom: $space-xs;
+    }
+
+    .subtitle {
+      font-size: $font-small;
+      color: $text-secondary;
+    }
+  }
+
+  .category-tabs {
+    display: flex;
+    gap: $space-sm;
+    margin-bottom: $space-lg;
+
+    .tab-item {
+      flex: 1;
+      background: $surface;
+      border-radius: $radius-md;
+      padding: $space-md;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: $shadow-light;
+      transition: all $transition-base;
+
+      &:active {
+        transform: scale(0.98);
+      }
+
+      &.active {
+        background: $primary-500;
+
+        .tab-icon,
+        .tab-name,
+        .tab-count {
+          color: white;
+        }
+      }
+
+      .tab-icon {
+        display: block;
+        font-size: 20px;
+        margin-bottom: $space-xs;
+      }
+
+      .tab-name {
+        display: block;
+        font-size: $font-small;
+        font-weight: $font-semibold;
+        color: $text-primary;
+        margin-bottom: 2px;
+      }
+
+      .tab-count {
+        display: block;
+        font-size: $font-small;
+        color: $text-tertiary;
+      }
+    }
+  }
+
+  .tips-list {
+    background: $surface;
+    border-radius: $radius-md;
+    box-shadow: $shadow-light;
+    overflow: hidden;
+
+    .tip-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: $space-md $space-lg;
+      border-bottom: 1px solid $divider;
+      cursor: pointer;
+      transition: background $transition-base;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:active {
+        background: rgba($primary-500, 0.05);
+      }
+
+      .tip-title {
+        font-size: $font-body;
+        color: $text-primary;
+        font-weight: $font-medium;
+        flex: 1;
+      }
+
+      .tip-arrow {
+        font-size: 18px;
+        color: $text-tertiary;
+        margin-left: $space-sm;
+      }
+    }
+
+    .empty {
+      padding: $space-2xl;
+      text-align: center;
+      color: $text-tertiary;
+    }
+  }
+}

@@ -1,0 +1,120 @@
+@import '../../styles/design-tokens.scss';
+
+.index {
+  padding: $space-lg;
+  background-color: $background;
+  min-height: 100vh;
+
+  .header {
+    text-align: center;
+    padding: $space-3xl 0 $space-2xl;
+
+    .title {
+      display: block;
+      font-size: $font-h1;
+      font-weight: $font-bold;
+      color: $primary-500;
+      margin-bottom: $space-sm;
+      letter-spacing: -0.5px;
+    }
+
+    .update-time {
+      display: block;
+      font-size: $font-small;
+      color: $text-tertiary;
+      margin-top: $space-sm;
+    }
+  }
+
+  .categories {
+    margin-bottom: $space-3xl;
+
+    .section-title {
+      display: block;
+      font-size: $font-h3;
+      font-weight: $font-semibold;
+      color: $text-primary;
+      margin-bottom: $space-lg;
+      padding-left: $space-xs;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: $space-md;
+
+      .category-item {
+        @include card;
+        @include active-scale(0.95);
+        padding: $space-2xl $space-sm;
+        text-align: center;
+        aspect-ratio: 1;
+        @include flex-center;
+        flex-direction: column;
+        cursor: pointer;
+
+        &:active {
+          box-shadow: $shadow-medium;
+        }
+
+        .category-icon {
+          display: block;
+          font-size: 42px;
+          margin-bottom: $space-md;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+        }
+
+        .category-name {
+          display: block;
+          font-size: $font-caption;
+          font-weight: $font-semibold;
+          color: $text-primary;
+          margin-bottom: $space-xs;
+        }
+
+        .category-count {
+          display: block;
+          font-size: $font-small;
+          color: $text-tertiary;
+          font-weight: $font-medium;
+        }
+      }
+    }
+  }
+
+  .stats {
+    display: flex;
+    gap: $space-md;
+    margin-bottom: $space-2xl;
+
+    .stat-item {
+      flex: 1;
+      background: $primary-gradient;
+      border-radius: $radius-lg;
+      padding: $space-2xl $space-lg;
+      text-align: center;
+      color: $surface;
+      box-shadow: $shadow-primary;
+      transition: transform $transition-base;
+
+      &:active {
+        transform: translateY(1px);
+      }
+
+      .stat-value {
+        display: block;
+        font-size: $font-h1;
+        font-weight: $font-bold;
+        margin-bottom: $space-xs;
+        letter-spacing: -1px;
+      }
+
+      .stat-label {
+        display: block;
+        font-size: $font-small;
+        font-weight: $font-medium;
+        opacity: 0.95;
+      }
+    }
+  }
+}

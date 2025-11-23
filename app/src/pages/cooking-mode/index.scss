@@ -1,0 +1,421 @@
+@import '../../styles/design-tokens.scss';
+
+.cooking-mode {
+  background-color: $background;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .header {
+    background: $primary-gradient;
+    padding: $space-xl $space-lg $space-lg;
+    text-align: center;
+    color: $surface;
+    box-shadow: $shadow-medium;
+
+    .recipe-name {
+      display: block;
+      font-size: $font-body;
+      font-weight: $font-bold;
+      margin-bottom: $space-xs;
+    }
+
+    .step-indicator {
+      display: block;
+      font-size: $font-caption;
+      opacity: 0.9;
+      font-weight: $font-semibold;
+    }
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: rgba(255, 138, 61, 0.12);
+
+    .progress-fill {
+      height: 100%;
+      background: $primary-gradient;
+      transition: width 0.3s ease-out;
+    }
+  }
+
+  .card-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $space-md;
+    perspective: 1000px;
+
+    .card {
+      position: absolute;
+      width: calc(100% - 32px);
+      height: calc(100% - 32px);
+      background: $surface;
+      border-radius: $radius-xl;
+      box-shadow: $shadow-heavy;
+      padding: $space-xl;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+
+      .step-number {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: $primary-gradient;
+        color: $surface;
+        @include flex-center;
+        font-size: $font-h3;
+        font-weight: $font-bold;
+        margin-bottom: $space-xl;
+        box-shadow: $shadow-primary;
+      }
+
+      .step-text {
+        font-size: $font-body;
+        line-height: $line-height-loose;
+        color: $text-primary;
+        text-align: center;
+        word-break: break-word;
+        font-weight: $font-medium;
+      }
+
+      &.card-next {
+        transform: scale(0.9);
+        opacity: 0.5;
+        z-index: 1;
+      }
+
+      &.card-current {
+        z-index: 10;
+        cursor: grab;
+
+        &:active {
+          cursor: grabbing;
+        }
+      }
+
+      .swipe-hint {
+        position: absolute;
+        top: $space-lg;
+        padding: $space-sm $space-md;
+        border-radius: $radius-md;
+        font-size: $font-small;
+        font-weight: $font-bold;
+
+        &.swipe-next {
+          right: $space-lg;
+          background: rgba($primary-500, 0.9);
+          color: $surface;
+        }
+
+        &.swipe-prev {
+          left: $space-lg;
+          background: rgba($text-secondary, 0.9);
+          color: $surface;
+        }
+      }
+    }
+
+    .tap-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 60px;
+      @include flex-center;
+      cursor: pointer;
+      z-index: 20;
+
+      text {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: $surface;
+        box-shadow: $shadow-medium;
+        @include flex-center;
+        font-size: 20px;
+        color: $primary-500;
+        font-weight: $font-bold;
+        line-height: 1;
+        transition: all $transition-base;
+      }
+
+      &:active text {
+        transform: scale(0.9);
+      }
+
+      &.tap-left {
+        left: $space-sm;
+      }
+
+      &.tap-right {
+        right: $space-sm;
+      }
+
+      &.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+
+        &:active text {
+          transform: none;
+        }
+      }
+    }
+  }
+
+  .swipe-guide {
+    display: none;
+  }
+
+  .ingredients-btn {
+    position: fixed;
+    bottom: $space-2xl;
+    left: 50%;
+    transform: translateX(-50%);
+    background: $surface;
+    padding: $space-sm $space-xl;
+    border-radius: $radius-round;
+    box-shadow: $shadow-heavy;
+    cursor: pointer;
+    transition: all $transition-base;
+    z-index: 10;
+    border: 2px solid rgba(255, 138, 61, 0.15);
+    text-align: center;
+
+    &:active {
+      transform: translateX(-50%) scale(0.95);
+    }
+
+    text {
+      font-size: $font-small;
+      color: $primary-500;
+      font-weight: $font-bold;
+      display: block;
+      text-align: center;
+    }
+  }
+
+  .ingredients-overlay {
+    @include overlay(0.5);
+    animation: fadeIn $transition-base;
+    display: flex;
+    align-items: flex-end;
+
+    .ingredients-panel {
+      background: $surface;
+      border-radius: $radius-xl $radius-xl 0 0;
+      padding: $space-xl $space-lg $space-2xl;
+      width: 100%;
+      max-height: 70vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease-out;
+
+      .panel-title {
+        display: block;
+        font-size: $font-body;
+        font-weight: $font-bold;
+        color: $text-primary;
+        margin-bottom: $space-xl;
+        text-align: center;
+      }
+
+      .ingredients-list {
+        margin-bottom: $space-lg;
+
+        .ingredient-item {
+          padding: $space-md $space-xs;
+          border-bottom: 1px solid $divider;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .ingredient-name {
+            font-size: $font-caption;
+            color: $text-primary;
+            font-weight: $font-medium;
+          }
+
+          .ingredient-amount {
+            font-size: $font-small;
+            color: $primary-500;
+            font-weight: $font-bold;
+          }
+        }
+      }
+
+      .close-btn {
+        padding: $space-md;
+        background: $background;
+        border-radius: $radius-md;
+        text-align: center;
+        cursor: pointer;
+
+        &:active {
+          background: darken($background, 5%);
+        }
+
+        text {
+          font-size: $font-caption;
+          color: $text-secondary;
+          font-weight: $font-semibold;
+        }
+      }
+    }
+  }
+
+  // 庆祝页面
+  &.celebration {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    justify-content: center;
+    align-items: center;
+    position: relative;
+
+    .confetti {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+
+      .confetti-piece {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        top: -20px;
+        animation: confetti-fall 3s linear infinite;
+
+        &.confetti-0 {
+          background: #ff6b6b;
+          left: 10%;
+          animation-delay: 0s;
+        }
+        &.confetti-1 {
+          background: #feca57;
+          left: 30%;
+          animation-delay: 0.3s;
+        }
+        &.confetti-2 {
+          background: #48dbfb;
+          left: 50%;
+          animation-delay: 0.6s;
+        }
+        &.confetti-3 {
+          background: #ff9ff3;
+          left: 70%;
+          animation-delay: 0.9s;
+        }
+        &.confetti-4 {
+          background: #1dd1a1;
+          left: 90%;
+          animation-delay: 1.2s;
+        }
+      }
+    }
+
+    .celebration-content {
+      text-align: center;
+      z-index: 10;
+      animation: celebrate-pop 0.5s ease-out;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .celebration-emoji {
+        display: block;
+        font-size: 80px;
+        margin-bottom: $space-xl;
+        animation: bounce 1s infinite;
+      }
+
+      .celebration-title {
+        display: block;
+        font-size: $font-h1;
+        font-weight: $font-bold;
+        color: $surface;
+        margin-bottom: $space-md;
+      }
+
+      .celebration-subtitle {
+        display: block;
+        font-size: $font-body;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: $space-2xl;
+      }
+
+      .celebration-btn {
+        margin-top: $space-lg;
+        padding: $space-md $space-2xl;
+        background: $surface;
+        border-radius: $radius-round;
+        cursor: pointer;
+        transition: all $transition-base;
+        text-align: center;
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        text {
+          font-size: $font-caption;
+          color: $primary-500;
+          font-weight: $font-bold;
+          display: block;
+          text-align: center;
+        }
+      }
+    }
+  }
+}
+
+// 动画
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes celebrate-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}

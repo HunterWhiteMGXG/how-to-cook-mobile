@@ -1,0 +1,19 @@
+{
+  "name": "howtocook-scripts",
+  "version": "1.0.0",
+  "description": "HowToCook data processing scripts",
+  "main": "parse-markdown.js",
+  "scripts": {
+    "parse": "node parse-markdown.js"
+  },
+  "keywords": [
+    "markdown",
+    "parser",
+    "recipe"
+  ],
+  "author": "",
+  "license": "Unlicense",
+  "dependencies": {
+    "glob": "^7.2.0"
+  }
+}
