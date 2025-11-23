@@ -35,6 +35,8 @@ jobs:
         run: |
           cd scripts
           npm install
+          cd ../app
+          npm install
 
       - name: Parse markdown and generate data
         run: |
