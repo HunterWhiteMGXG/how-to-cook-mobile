@@ -1,9 +1,9 @@
 name: Update App Data
 
 on:
-  # 每周一凌晨 2 点（UTC）运行
+  # 每天北京时间凌晨 4 点（UTC 20:00）运行
   schedule:
-    - cron: '0 2 * * 1'
+    - cron: '0 20 * * *'
   # 也可以手动触发
   workflow_dispatch:
 
@@ -14,7 +14,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check upstream for changes
+        id: check-upstream
+        run: |
+          # 获取上游最新 commit
+          UPSTREAM_COMMIT=$(git ls-remote https://github.com/Anduin2017/HowToCook.git HEAD | cut -f1)
+          echo "upstream_commit=$UPSTREAM_COMMIT" >> $GITHUB_OUTPUT
+
+          # 读取上次同步的 commit（如果存在）
+          if [ -f .last-upstream-commit ]; then
+            LAST_COMMIT=$(cat .last-upstream-commit)
+          else
+            LAST_COMMIT=""
+          fi
+
+          # 比较是否有变化
+          if [ "$UPSTREAM_COMMIT" = "$LAST_COMMIT" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes in upstream repository"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Upstream has new changes: $UPSTREAM_COMMIT"
+          fi
+
       - name: Clone upstream HowToCook data
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           # 安装 Git LFS
           git lfs install
@@ -30,11 +54,13 @@ jobs:
           rm -rf upstream
 
       - name: Setup Node.js
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           cd scripts
           npm install
@@ -42,6 +68,7 @@ jobs:
           npm install
 
       - name: Parse markdown and generate data
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           # 解析菜谱 markdown 生成 JSON
           node scripts/parse-markdown.js
@@ -51,10 +78,12 @@ jobs:
           node scripts/render-tips-html.js
 
       - name: Generate version file
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           echo "{\"version\": \"$(date +%Y%m%d%H%M%S)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app/src/assets/data/version.json
 
       - name: Collect images from dishes
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           mkdir -p images
           # 复制所有图片文件，保持目录结构
@@ -67,6 +96,7 @@ jobs:
           echo "Collected $(find images -type f | wc -l) images"
 
       - name: Upload data to Cloudflare R2
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         uses: ryand56/r2-upload-action@latest
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
@@ -77,6 +107,7 @@ jobs:
           destination-dir: ./
 
       - name: Upload images to Cloudflare R2
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         uses: ryand56/r2-upload-action@latest
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
@@ -86,9 +117,23 @@ jobs:
           source-dir: images
           destination-dir: images
 
+      - name: Save upstream commit hash
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "${{ steps.check-upstream.outputs.upstream_commit }}" > .last-upstream-commit
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .last-upstream-commit
+          git commit -m "chore: update last upstream commit hash" || true
+          git push
+
       - name: Summary
         run: |
-          echo "✅ Data synced from upstream and uploaded to R2!"
-          echo "Data files:"
-          ls -la app/src/assets/data/
-          echo "Images: $(find images -type f | wc -l) files"
+          if [ "${{ steps.check-upstream.outputs.has_changes }}" = "true" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "✅ Data synced from upstream and uploaded to R2!"
+            echo "Data files:"
+            ls -la app/src/assets/data/
+            echo "Images: $(find images -type f | wc -l) files"
+          else
+            echo "ℹ️ No changes in upstream repository, skipped sync"
+          fi
