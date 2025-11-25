@@ -1,16 +1,25 @@
 import { View, Text } from "@tarojs/components";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import { useRecipeStore } from "@/store";
+import { getTips } from "@/services/dataService";
 import "./index.scss";
 
 export default function Index() {
   const { recipes, categories, favorites, loadData } =
     useRecipeStore();
+  const [tipsCount, setTipsCount] = useState(0);
 
   useEffect(() => {
     // 加载菜谱和分类数据
     loadData();
+
+    // 加载 tips 数据获取数量
+    getTips().then(data => {
+      if (data && data.tips) {
+        setTipsCount(data.tips.length);
+      }
+    });
   }, [loadData]);
 
   // 点击分类 - 跳转到菜谱列表页
@@ -68,7 +77,7 @@ export default function Index() {
           <View className="category-item" onClick={handleKnowledgeClick}>
             <Text className="category-icon">📚</Text>
             <Text className="category-name">理论</Text>
-            <Text className="category-count">18 篇</Text>
+            <Text className="category-count">{tipsCount} 篇</Text>
           </View>
         </View>
       </View>

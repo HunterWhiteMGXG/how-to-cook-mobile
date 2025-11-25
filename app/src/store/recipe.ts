@@ -83,16 +83,19 @@ export const useRecipeStore = create<RecipeState>((set, get) => ({
   isFavorite: (recipeId) => get().favorites.includes(recipeId),
   loadData: async () => {
     const { isLoading } = get()
+    console.log('[RecipeStore] loadData called, isLoading:', isLoading)
     if (isLoading) return
 
+    console.log('[RecipeStore] Starting to load data...')
     // 后台检查更新（不阻塞 UI）
     Promise.all([
       getRecipes(),
       getCategories(),
     ]).then(([recipes, categories]) => {
+      console.log('[RecipeStore] Data loaded, recipes:', recipes.length, 'categories:', categories.length)
       set({ recipes, categories, isDataLoaded: true })
     }).catch(error => {
-      console.error('Failed to load data:', error)
+      console.error('[RecipeStore] Failed to load data:', error)
     })
   },
 }))

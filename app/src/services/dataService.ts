@@ -4,11 +4,20 @@ import Taro from '@tarojs/taro'
 declare const __TARO_ENV_DEV__: boolean | undefined
 const isDev = typeof __TARO_ENV_DEV__ !== 'undefined' ? __TARO_ENV_DEV__ : true
 
+// 获取基础 URL
+function getBaseUrl(): string {
+  // H5 开发环境使用代理
+  if (isDev && process.env.TARO_ENV === 'h5') {
+    return '/api'
+  }
+  // 小程序和生产环境直接访问 R2
+  return 'https://howtocook.hunter-white.com'
+}
+
 // 数据配置
 const DATA_CONFIG = {
   // 远程数据 URL - Cloudflare R2 自定义域名
-  // 开发环境通过代理访问，生产环境直接访问 R2
-  baseUrl: isDev ? '/api' : 'https://howtocook.hunter-white.com',
+  baseUrl: getBaseUrl(),
   // 缓存版本号
   version: '1.0.0',
   // 缓存有效期（毫秒）- 默认 24 小时
@@ -66,12 +75,25 @@ async function fetchRemoteData<T>(endpoint: string): Promise<T | null> {
 
   try {
     const url = `${DATA_CONFIG.baseUrl}/${endpoint}`
-    const res = await fetch(url)
-    if (res.ok) {
-      return await res.json() as T
+    console.log('[DataService] Requesting URL:', url)
+
+    // 使用 Taro.request 以兼容小程序和 H5
+    const res = await Taro.request({
+      url,
+      method: 'GET',
+      dataType: 'json'
+    })
+
+    console.log('[DataService] Request response status:', res.statusCode)
+
+    if (res.statusCode === 200 && res.data) {
+      return res.data as T
     }
+
+    console.log('[DataService] Request failed with status:', res.statusCode)
     return null
-  } catch {
+  } catch (error) {
+    console.error('[DataService] Request error:', error)
     return null
   }
 }
@@ -81,10 +103,14 @@ async function checkRemoteVersion(): Promise<string | null> {
   if (!DATA_CONFIG.baseUrl) return null
 
   try {
-    const res = await fetch(`${DATA_CONFIG.baseUrl}/version.json`)
-    if (res.ok) {
-      const data = await res.json()
-      return data.version || null
+    const res = await Taro.request({
+      url: `${DATA_CONFIG.baseUrl}/version.json`,
+      method: 'GET',
+      dataType: 'json'
+    })
+
+    if (res.statusCode === 200 && res.data) {
+      return (res.data as any).version || null
     }
     return null
   } catch {
@@ -157,25 +183,38 @@ export function getRecipesCached(): any[] | null {
 export async function getRecipes(): Promise<any[]> {
   const cacheKey = CACHE_KEYS.recipes
 
+  console.log('[DataService] getRecipes called, baseUrl:', DATA_CONFIG.baseUrl)
+
   // 1. 有缓存且不需要更新，直接返回缓存
   const cached = getFromCache<any[]>(cacheKey)
-  if (cached && !await shouldUpdateData()) {
+  console.log('[DataService] cached recipes:', cached ? cached.length : 0)
+
+  const needUpdate = await shouldUpdateData()
+  console.log('[DataService] shouldUpdateData:', needUpdate)
+
+  if (cached && !needUpdate) {
+    console.log('[DataService] Using cached recipes')
     return cached
   }
 
   // 2. 需要更新或无缓存，尝试远程获取
   if (DATA_CONFIG.baseUrl) {
+    console.log('[DataService] Fetching remote recipes from:', `${DATA_CONFIG.baseUrl}/recipes.json`)
     const remote = await fetchRemoteData<any[]>('recipes.json')
     if (remote) {
+      console.log('[DataService] Fetched remote recipes:', remote.length)
       saveToCache(cacheKey, remote)
       // 同时更新版本号
       const remoteVersion = await checkRemoteVersion()
       if (remoteVersion) saveVersion(remoteVersion)
       return remote
+    } else {
+      console.log('[DataService] Failed to fetch remote recipes')
     }
   }
 
   // 3. 使用缓存（如果有）
+  console.log('[DataService] Returning cached or empty array')
   return cached || []
 }
 
@@ -188,19 +227,30 @@ export function getCategoriesCached(): any[] | null {
 export async function getCategories(): Promise<any[]> {
   const cacheKey = CACHE_KEYS.categories
 
+  console.log('[DataService] getCategories called')
+
   const cached = getFromCache<any[]>(cacheKey)
-  if (cached && !await shouldUpdateData()) {
+  console.log('[DataService] cached categories:', cached ? cached.length : 0)
+
+  const needUpdate = await shouldUpdateData()
+  if (cached && !needUpdate) {
+    console.log('[DataService] Using cached categories')
     return cached
   }
 
   if (DATA_CONFIG.baseUrl) {
+    console.log('[DataService] Fetching remote categories from:', `${DATA_CONFIG.baseUrl}/categories.json`)
     const remote = await fetchRemoteData<any[]>('categories.json')
     if (remote) {
+      console.log('[DataService] Fetched remote categories:', remote.length)
       saveToCache(cacheKey, remote)
       return remote
+    } else {
+      console.log('[DataService] Failed to fetch remote categories')
     }
   }
 
+  console.log('[DataService] Returning cached or empty categories array')
   return cached || []
 }
 
@@ -249,10 +299,14 @@ export async function checkForUpdates(): Promise<boolean> {
   if (!DATA_CONFIG.baseUrl) return false
 
   try {
-    const res = await fetch(`${DATA_CONFIG.baseUrl}/version.json`)
-    if (res.ok) {
-      const data = await res.json()
-      const remoteVersion = data.version
+    const res = await Taro.request({
+      url: `${DATA_CONFIG.baseUrl}/version.json`,
+      method: 'GET',
+      dataType: 'json'
+    })
+
+    if (res.statusCode === 200 && res.data) {
+      const remoteVersion = (res.data as any).version
       const localVersion = Taro.getStorageSync(CACHE_KEYS.version) || ''
 
       if (remoteVersion !== localVersion) {

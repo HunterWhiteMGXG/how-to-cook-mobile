@@ -3,7 +3,7 @@
 .recipe-detail {
   background-color: $background;
   min-height: 100vh;
-  padding-bottom: 80px; // 为底部按钮留空间
+  padding-bottom: calc(80px + env(safe-area-inset-bottom)); // 为底部按钮留空间 + 安全区域
 
   .cover-image-container {
     width: 100%;
@@ -331,6 +331,7 @@
     right: 0;
     background: $surface;
     padding: $space-md $space-lg;
+    padding-bottom: calc($space-md + env(safe-area-inset-bottom));
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
     display: flex;
     gap: $space-md;

@@ -2,7 +2,7 @@
   "miniprogramRoot": "dist/",
   "projectname": "howtocook-app",
   "description": "HowToCook - 程序员做饭指南",
-  "appid": "touristappid",
+  "appid": "wxceb465568100dfed",
   "setting": {
     "urlCheck": true,
     "es6": false,

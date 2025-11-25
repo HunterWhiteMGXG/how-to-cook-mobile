@@ -47,12 +47,13 @@
     align-items: center;
     justify-content: center;
     padding: $space-md;
+    padding-top: $space-xl;
     perspective: 1000px;
 
     .card {
       position: absolute;
       width: calc(100% - 32px);
-      height: calc(100% - 32px);
+      height: calc(100% - 64px);
       background: $surface;
       border-radius: $radius-xl;
       box-shadow: $shadow-heavy;
@@ -173,7 +174,7 @@
 
   .ingredients-btn {
     position: fixed;
-    bottom: $space-2xl;
+    bottom: calc($space-2xl + env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
     background: $surface;

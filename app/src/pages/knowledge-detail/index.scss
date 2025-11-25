@@ -4,6 +4,7 @@
   min-height: 100vh;
   background: $background;
   padding: $space-lg;
+  padding-bottom: calc($space-lg + env(safe-area-inset-bottom));
 
   .header {
     margin-bottom: $space-lg;
