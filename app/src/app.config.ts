@@ -13,6 +13,10 @@ export default defineAppConfig({
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',
     navigationBarTitleText: 'HowToCook',
-    navigationBarTextStyle: 'black'
+    navigationBarTextStyle: 'black',
+    backgroundColor: '#FAFAF8',
+    backgroundColorTop: '#FAFAF8',
+    backgroundColorBottom: '#FAFAF8',
+    enablePullDownRefresh: false
   }
 })

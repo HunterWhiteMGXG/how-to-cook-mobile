@@ -17,7 +17,7 @@
       margin-bottom: $space-sm;
 
       .category-icon {
-        font-size: 32px;
+        font-size: 38px;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
       }
 
@@ -162,7 +162,7 @@
         }
 
         .recipe-image-icon {
-          font-size: 42px;
+          font-size: 48px;
           z-index: 1;
           filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
         }
@@ -193,7 +193,7 @@
           display: flex;
           justify-content: center;
           gap: $space-xs;
-          font-size: 11px;
+          font-size: $font-small;
 
           .meta-item {
             display: flex;
