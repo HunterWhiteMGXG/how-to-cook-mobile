@@ -1,6 +1,6 @@
 # Taro 应用
 
-这里是 HowToCook Mobile 的小程序应用目录。
+这里是“爱学做菜”的小程序应用目录。
 
 ```bash
 npm ci

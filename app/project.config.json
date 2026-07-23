@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "dist/",
   "projectname": "howtocook-app",
-  "description": "HowToCook - 程序员做饭指南",
+  "description": "爱学做菜 - 家常菜谱与烹饪知识指南",
   "appid": "wxceb465568100dfed",
   "setting": {
     "urlCheck": true,
@@ -9,7 +9,7 @@
     "enhance": true,
     "compileHotReLoad": false,
     "postcss": false,
-    "minified": false
+    "minified": true
   },
   "compileType": "miniprogram"
 }

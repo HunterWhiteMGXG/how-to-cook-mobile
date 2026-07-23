@@ -40,7 +40,7 @@ export default function Index() {
   return (
     <View className="index">
       <View className="header">
-        <Text className="title">HowToCook</Text>
+        <Text className="title">爱学做菜</Text>
       </View>
 
       <View className="categories">

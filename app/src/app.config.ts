@@ -9,10 +9,11 @@ export default defineAppConfig({
     'pages/knowledge-list/index',
     'pages/knowledge-detail/index'
   ],
+  lazyCodeLoading: 'requiredComponents',
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',
-    navigationBarTitleText: 'HowToCook',
+    navigationBarTitleText: '爱学做菜',
     navigationBarTextStyle: 'black',
     backgroundColor: '#FAFAF8',
     backgroundColorTop: '#FAFAF8',

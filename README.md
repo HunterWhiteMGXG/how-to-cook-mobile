@@ -1,6 +1,6 @@
-# HowToCook Mobile
+# 爱学做菜
 
-基于 [HowToCook](https://github.com/Anduin2017/HowToCook) 内容制作的微信小程序。项目使用 Taro、React 和 TypeScript 开发，当前以微信小程序端为主要交付目标。
+爱学做菜是一款基于 [HowToCook](https://github.com/Anduin2017/HowToCook) 内容制作的微信小程序。项目使用 Taro、React 和 TypeScript 开发，当前以微信小程序端为主要交付目标。
 
 ## 已实现
 

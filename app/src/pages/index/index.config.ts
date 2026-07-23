@@ -1,3 +1,3 @@
 export default definePageConfig({
-  navigationBarTitleText: 'HowToCook - 首页'
+  navigationBarTitleText: '爱学做菜'
 })

@@ -2,7 +2,7 @@
   "name": "howtocook-app",
   "version": "1.0.0",
   "private": true,
-  "description": "HowToCook Mobile App - 程序员做饭指南",
+  "description": "爱学做菜 - 家常菜谱与烹饪知识指南",
   "templateInfo": {
     "name": "default",
     "typescript": true,
