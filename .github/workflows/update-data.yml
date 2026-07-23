@@ -7,11 +7,15 @@ on:
   # 也可以手动触发
   workflow_dispatch:
 
+concurrency:
+  group: update-app-data
+  cancel-in-progress: false
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,12 +27,10 @@ jobs:
           UPSTREAM_COMMIT=$(git ls-remote https://github.com/Anduin2017/HowToCook.git HEAD | cut -f1)
           echo "upstream_commit=$UPSTREAM_COMMIT" >> $GITHUB_OUTPUT
 
-          # 读取上次同步的 commit（如果存在）
-          if [ -f .last-upstream-commit ]; then
-            LAST_COMMIT=$(cat .last-upstream-commit)
-          else
-            LAST_COMMIT=""
-          fi
+          # 从已发布版本读取上次同步的 commit，避免向代码仓库提交状态文件
+          LAST_COMMIT=$(curl -fsSL https://howtocook.hunter-white.com/version.json 2>/dev/null \
+            | sed -n 's/.*"upstreamCommit"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+            || true)
 
           # 比较是否有变化
           if [ "$UPSTREAM_COMMIT" = "$LAST_COMMIT" ]; then
@@ -60,29 +62,26 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
 
       - name: Install dependencies
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          cd scripts
-          npm install
-          cd ../app
-          npm install
+        working-directory: scripts
+        run: npm ci
 
       - name: Parse markdown and generate data
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          # 解析菜谱 markdown 生成 JSON
-          node scripts/parse-markdown.js
-          # 解析知识库 tips 生成 JSON
-          node scripts/parse-tips.js
-          # 渲染 tips HTML
-          node scripts/render-tips-html.js
+        working-directory: scripts
+        run: npm run build:data
 
-      - name: Generate version file
+      - name: Validate generated data
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
-          echo "{\"version\": \"$(date +%Y%m%d%H%M%S)\", \"updatedAt\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > app/src/assets/data/version.json
+          for file in recipes.json categories.json tips.json; do
+            test -s "app/src/assets/data/$file"
+            node -e "JSON.parse(require('fs').readFileSync('app/src/assets/data/$file', 'utf8'))"
+          done
 
       - name: Collect images from dishes
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
@@ -99,7 +98,7 @@ jobs:
 
       - name: Upload data to Cloudflare R2
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
-        uses: ryand56/r2-upload-action@latest
+        uses: ryand56/r2-upload-action@b801a390acbdeb034c5e684ff5e1361c06639e7c # v1.4
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -110,7 +109,7 @@ jobs:
 
       - name: Upload images to Cloudflare R2
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
-        uses: ryand56/r2-upload-action@latest
+        uses: ryand56/r2-upload-action@b801a390acbdeb034c5e684ff5e1361c06639e7c # v1.4
         with:
           r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
           r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -119,15 +118,29 @@ jobs:
           source-dir: images
           destination-dir: images
 
-      - name: Save upstream commit hash
+      # 版本文件是同步完成标记，必须在数据和图片全部上传成功后最后发布。
+      - name: Generate completion version
         if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
         run: |
-          echo "${{ steps.check-upstream.outputs.upstream_commit }}" > .last-upstream-commit
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .last-upstream-commit
-          git commit -m "chore: update last upstream commit hash" || true
-          git push
+          mkdir -p version-upload
+          VERSION=$(date +%Y%m%d%H%M%S)
+          UPDATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          UPSTREAM_COMMIT="${{ steps.check-upstream.outputs.upstream_commit }}"
+          printf '{"version":"%s","updatedAt":"%s","upstreamCommit":"%s"}\n' \
+            "$VERSION" "$UPDATED_AT" "$UPSTREAM_COMMIT" \
+            > version-upload/version.json
+          node -e "JSON.parse(require('fs').readFileSync('version-upload/version.json', 'utf8'))"
+
+      - name: Publish completion version
+        if: steps.check-upstream.outputs.has_changes == 'true' || github.event_name == 'workflow_dispatch'
+        uses: ryand56/r2-upload-action@b801a390acbdeb034c5e684ff5e1361c06639e7c # v1.4
+        with:
+          r2-account-id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2-access-key-id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2-secret-access-key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2-bucket: ${{ secrets.R2_BUCKET_NAME }}
+          source-dir: version-upload
+          destination-dir: ./
 
       - name: Summary
         run: |
@@ -135,6 +148,8 @@ jobs:
             echo "✅ Data synced from upstream and uploaded to R2!"
             echo "Data files:"
             ls -la app/src/assets/data/
+            echo "Version:"
+            cat version-upload/version.json
             echo "Images: $(find images -type f | wc -l) files"
           else
             echo "ℹ️ No changes in upstream repository, skipped sync"

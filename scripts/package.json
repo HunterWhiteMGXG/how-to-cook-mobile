@@ -4,7 +4,10 @@
   "description": "HowToCook data processing scripts",
   "main": "parse-markdown.js",
   "scripts": {
-    "parse": "node parse-markdown.js"
+    "parse:recipes": "node parse-markdown.js",
+    "parse:tips": "node parse-tips.js",
+    "render:tips": "node render-tips-html.js",
+    "build:data": "npm run parse:recipes && npm run parse:tips && npm run render:tips"
   },
   "keywords": [
     "markdown",
@@ -14,6 +17,7 @@
   "author": "",
   "license": "Unlicense",
   "dependencies": {
-    "glob": "^7.2.0"
+    "glob": "13.0.6",
+    "marked": "17.0.1"
   }
 }

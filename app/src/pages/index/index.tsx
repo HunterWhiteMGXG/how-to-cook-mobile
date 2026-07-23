@@ -1,8 +1,9 @@
 import { View, Text } from "@tarojs/components";
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
-import { useRecipeStore } from "@/store";
+import { useRecipeStore } from "@/store/recipe";
 import { getTips } from "@/services/dataService";
+import { ROUTES } from "@/constants";
 import "./index.scss";
 
 export default function Index() {
@@ -25,14 +26,14 @@ export default function Index() {
   // 点击分类 - 跳转到菜谱列表页
   const handleCategoryClick = (categoryId: string) => {
     Taro.navigateTo({
-      url: `/pages/recipe-list/index?category=${categoryId}`,
+      url: `${ROUTES.RECIPE_LIST}?category=${categoryId}`,
     });
   };
 
   // 点击知识 - 跳转到知识列表页
   const handleKnowledgeClick = () => {
     Taro.navigateTo({
-      url: "/pages/knowledge-list/index",
+      url: ROUTES.KNOWLEDGE_LIST,
     });
   };
 

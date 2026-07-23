@@ -1,14 +1,21 @@
 import { View, Text, Image } from '@tarojs/components'
 import { useState, useMemo, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { useRecipeStore } from '@/store'
+import { useRecipeStore } from '@/store/recipe'
+import { ROUTES } from '@/constants'
 import './index.scss'
 
 export default function RecipeDetail() {
   const router = useRouter()
   const { id: encodedId } = router.params
   const id = encodedId ? decodeURIComponent(encodedId) : ''
-  const { recipes, favorites, toggleFavorite, loadData } = useRecipeStore()
+  const {
+    recipes,
+    favorites,
+    isDataLoaded,
+    toggleFavorite,
+    loadData,
+  } = useRecipeStore()
 
   // 确保数据已加载
   useEffect(() => {
@@ -38,29 +45,15 @@ export default function RecipeDetail() {
     })
   }
 
-  // 获取难度文本
-  const getDifficultyText = (difficulty: number) => {
-    const levels = ['非常简单', '简单', '普通', '较难', '困难']
-    return levels[difficulty - 1] || '未知'
-  }
-
-  // 获取烹饪时间文本
-  const getCookingTimeText = (time: number) => {
-    if (time < 1) return '<30分钟'
-    if (time === 1) return '30-60分钟'
-    if (time === 2) return '1-2小时'
-    return '>2小时'
-  }
-
   // 开始烹饪
   const handleStartCooking = () => {
     Taro.navigateTo({
-      url: `/pages/cooking-mode/index?id=${encodeURIComponent(id)}`
+      url: `${ROUTES.COOKING_MODE}?id=${encodeURIComponent(id)}`
     })
   }
 
   // 如果数据还在加载中，显示加载提示
-  if (recipes.length === 0) {
+  if (!isDataLoaded) {
     return (
       <View className="recipe-detail">
         <View style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -162,12 +155,12 @@ export default function RecipeDetail() {
               <View key={index} className="step-item">
                 <Text className="step-number">{index + 1}</Text>
                 <Text className="step-text">{step.content}</Text>
-                {step.images && step.images.length > 0 && (
-                  <View className="step-images">
-                    {step.images.map((image, imgIndex) => (
-                      <View key={imgIndex} className="step-image" />
-                    ))}
-                  </View>
+                {step.image && (
+                  <Image
+                    src={step.image}
+                    mode="widthFix"
+                    className="step-image"
+                  />
                 )}
               </View>
             ))}

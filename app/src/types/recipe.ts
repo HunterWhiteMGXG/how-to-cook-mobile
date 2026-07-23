@@ -77,16 +77,3 @@ export interface Category {
   recipeCount: number
   order: number
 }
-
-/**
- * 菜谱筛选条件
- */
-export interface RecipeFilters {
-  category?: string
-  difficulty?: number[]
-  cookingTime?: {
-    min?: number
-    max?: number
-  }
-  tags?: string[]
-}

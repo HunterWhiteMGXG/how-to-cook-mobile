@@ -2,31 +2,44 @@ import { View, Text, RichText } from '@tarojs/components'
 import { useState, useEffect } from 'react'
 import { useRouter } from '@tarojs/taro'
 import { getTips } from '@/services/dataService'
+import type { Tip } from '@/types'
 import './index.scss'
 
 export default function KnowledgeDetail() {
   const router = useRouter()
   const { id: encodedId } = router.params
   const id = encodedId ? decodeURIComponent(encodedId) : ''
-  const [tip, setTip] = useState<any>(null)
+  const [tip, setTip] = useState<Tip | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    getTips().then(data => {
-      if (data && data.tips) {
-        const found = data.tips.find(t => t.id === id)
-        setTip(found)
-      }
-    })
+    let isMounted = true
+
+    getTips()
+      .then((data) => {
+        if (isMounted) {
+          setTip(data.tips.find((item) => item.id === id) || null)
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [id])
 
   // 使用预渲染的 HTML
   const htmlContent = tip?.htmlContent || ''
 
-  if (!tip) {
+  if (isLoading || !tip) {
     return (
       <View className="knowledge-detail">
         <View className="empty">
-          <Text>文章不存在</Text>
+          <Text>{isLoading ? '加载中...' : '文章不存在'}</Text>
         </View>
       </View>
     )

@@ -10,12 +10,9 @@ declare module '*.scss'
 declare module '*.sass'
 declare module '*.json'
 
-declare const defineAppConfig: (config: any) => any
-declare const definePageConfig: (config: any) => any
-
 declare namespace NodeJS {
   interface ProcessEnv {
-    TARO_ENV: 'weapp' | 'swan' | 'alipay' | 'h5' | 'rn' | 'tt' | 'quickapp' | 'qq' | 'jd'
+    TARO_ENV: 'weapp' | 'h5'
     NODE_ENV: 'development' | 'production'
   }
 }

@@ -1,37 +1,21 @@
 import Taro from '@tarojs/taro'
+import type { Category, Recipe, TipsData } from '@/types'
 
-// 检测是否为开发环境
-declare const __TARO_ENV_DEV__: boolean | undefined
-const isDev = typeof __TARO_ENV_DEV__ !== 'undefined' ? __TARO_ENV_DEV__ : true
-
-// 获取基础 URL
-function getBaseUrl(): string {
-  // H5 开发环境使用代理
-  if (isDev && process.env.TARO_ENV === 'h5') {
-    return '/api'
-  }
-  // 小程序和生产环境直接访问 R2
-  return 'https://howtocook.hunter-white.com'
-}
-
-// 数据配置
 const DATA_CONFIG = {
-  // 远程数据 URL - Cloudflare R2 自定义域名
-  baseUrl: getBaseUrl(),
-  // 缓存版本号
-  version: '1.0.0',
-  // 缓存有效期（毫秒）- 默认 24 小时
+  baseUrl:
+    process.env.NODE_ENV === 'development' && process.env.TARO_ENV === 'h5'
+      ? '/api'
+      : 'https://howtocook.hunter-white.com',
+  // 远端版本接口不可用时，缓存可直接复用的时间。
   cacheExpiry: 24 * 60 * 60 * 1000,
 }
 
-// 缓存 key
 const CACHE_KEYS = {
   recipes: 'htc_recipes_cache',
   categories: 'htc_categories_cache',
   tips: 'htc_tips_cache',
-  lastFetch: 'htc_last_fetch',
-  version: 'htc_data_version',
-}
+} as const
+const LEGACY_CACHE_KEYS = ['htc_data_version', 'htc_last_fetch'] as const
 
 interface CacheData<T> {
   data: T
@@ -39,284 +23,239 @@ interface CacheData<T> {
   version: string
 }
 
-
-// 从缓存获取数据
-function getFromCache<T>(cacheKey: string): T | null {
-  try {
-    const cached = Taro.getStorageSync(cacheKey) as CacheData<T>
-    if (cached && cached.data) {
-      return cached.data
-    }
-    return null
-  } catch {
-    return null
-  }
+interface VersionData {
+  version: string
 }
 
-// 保存到缓存
-function saveToCache<T>(cacheKey: string, data: T): void {
+let remoteVersionPromise: Promise<string | null> | null = null
+const dataRequestPromises = new Map<string, Promise<unknown>>()
+
+type DataValidator<T> = (value: unknown) => value is T
+
+const isRecipeList: DataValidator<Recipe[]> = Array.isArray
+const isCategoryList: DataValidator<Category[]> = Array.isArray
+const isTipsData: DataValidator<TipsData> = (value): value is TipsData => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Partial<TipsData>
+  return Array.isArray(candidate.categories) && Array.isArray(candidate.tips)
+}
+
+function getCacheEntry<T>(
+  cacheKey: string,
+  validate: DataValidator<T>
+): CacheData<T> | null {
+  try {
+    const cached = Taro.getStorageSync<CacheData<unknown>>(cacheKey)
+    if (
+      cached &&
+      typeof cached === 'object' &&
+      'data' in cached &&
+      typeof cached.timestamp === 'number' &&
+      typeof cached.version === 'string' &&
+      validate(cached.data)
+    ) {
+      return cached as CacheData<T>
+    }
+  } catch (error) {
+    console.warn(`[DataService] 读取缓存失败: ${cacheKey}`, error)
+  }
+
+  return null
+}
+
+function saveToCache<T>(
+  cacheKey: string,
+  data: T,
+  version: string
+): void {
   try {
     const cacheData: CacheData<T> = {
       data,
       timestamp: Date.now(),
-      version: DATA_CONFIG.version,
+      version,
     }
     Taro.setStorageSync(cacheKey, cacheData)
   } catch (error) {
-    console.warn('Failed to save to cache:', error)
+    console.warn(`[DataService] 写入缓存失败: ${cacheKey}`, error)
   }
 }
 
-// 从远程获取数据
 async function fetchRemoteData<T>(endpoint: string): Promise<T | null> {
-  if (!DATA_CONFIG.baseUrl) {
-    return null
-  }
-
   try {
-    const url = `${DATA_CONFIG.baseUrl}/${endpoint}`
-    console.log('[DataService] Requesting URL:', url)
-
-    // 使用 Taro.request 以兼容小程序和 H5
-    const res = await Taro.request({
-      url,
+    const response = await Taro.request({
+      url: `${DATA_CONFIG.baseUrl}/${endpoint}`,
       method: 'GET',
-      dataType: 'json'
+      dataType: 'json',
     })
 
-    console.log('[DataService] Request response status:', res.statusCode)
-
-    if (res.statusCode === 200 && res.data) {
-      return res.data as T
+    if (response.statusCode === 200 && response.data) {
+      return response.data as T
     }
 
-    console.log('[DataService] Request failed with status:', res.statusCode)
-    return null
+    console.warn(
+      `[DataService] 请求失败: ${endpoint} (${response.statusCode})`
+    )
   } catch (error) {
-    console.error('[DataService] Request error:', error)
-    return null
+    console.warn(`[DataService] 请求失败: ${endpoint}`, error)
   }
+
+  return null
 }
 
-// 检查远程版本
-async function checkRemoteVersion(): Promise<string | null> {
-  if (!DATA_CONFIG.baseUrl) return null
-
-  try {
-    const res = await Taro.request({
-      url: `${DATA_CONFIG.baseUrl}/version.json`,
-      method: 'GET',
-      dataType: 'json'
-    })
-
-    if (res.statusCode === 200 && res.data) {
-      return (res.data as any).version || null
-    }
-    return null
-  } catch {
-    return null
+async function fetchRemoteVersion(): Promise<string | null> {
+  const versionData = await fetchRemoteData<unknown>('version.json')
+  if (
+    versionData &&
+    typeof versionData === 'object' &&
+    typeof (versionData as VersionData).version === 'string'
+  ) {
+    return (versionData as VersionData).version
   }
+
+  return null
 }
 
-// 获取本地缓存的版本号
-function getLocalVersion(): string {
-  try {
-    return Taro.getStorageSync(CACHE_KEYS.version) || ''
-  } catch {
-    return ''
+function getRemoteVersion(forceRefresh = false): Promise<string | null> {
+  if (forceRefresh || !remoteVersionPromise) {
+    remoteVersionPromise = fetchRemoteVersion()
   }
+
+  return remoteVersionPromise
 }
 
-// 缓存版本检查结果（避免重复请求）
-let versionCheckPromise: Promise<boolean> | null = null
-let versionCheckResult: boolean | null = null
-
-// 判断是否需要更新数据
-async function shouldUpdateData(): Promise<boolean> {
-  // 已有结果，直接返回
-  if (versionCheckResult !== null) {
-    return versionCheckResult
+function canUseCache<T>(
+  cached: CacheData<T>,
+  remoteVersion: string | null
+): boolean {
+  if (remoteVersion) {
+    return cached.version === remoteVersion
   }
 
-  // 已有进行中的检查，等待结果
-  if (versionCheckPromise) {
-    return versionCheckPromise
-  }
-
-  // 发起新的检查
-  versionCheckPromise = (async () => {
-    const remoteVersion = await checkRemoteVersion()
-    if (!remoteVersion) {
-      versionCheckResult = false
-      return false
-    }
-
-    const localVersion = getLocalVersion()
-    versionCheckResult = remoteVersion !== localVersion
-    return versionCheckResult
-  })()
-
-  return versionCheckPromise
+  return Date.now() - cached.timestamp < DATA_CONFIG.cacheExpiry
 }
 
-// 重置版本检查（下次启动时重新检查）
-export function resetVersionCheck(): void {
-  versionCheckPromise = null
-  versionCheckResult = null
-}
+async function loadRemoteBackedData<T>(
+  cacheKey: string,
+  endpoint: string,
+  fallback: T,
+  validate: DataValidator<T>
+): Promise<T> {
+  const cached = getCacheEntry<T>(cacheKey, validate)
+  const remoteVersion = await getRemoteVersion()
 
-// 保存版本号
-function saveVersion(version: string): void {
-  try {
-    Taro.setStorageSync(CACHE_KEYS.version, version)
-  } catch {
-    // ignore
-  }
-}
-
-// 获取菜谱数据（立即返回缓存）
-export function getRecipesCached(): any[] | null {
-  return getFromCache<any[]>(CACHE_KEYS.recipes)
-}
-
-// 获取菜谱数据
-export async function getRecipes(): Promise<any[]> {
-  const cacheKey = CACHE_KEYS.recipes
-
-  console.log('[DataService] getRecipes called, baseUrl:', DATA_CONFIG.baseUrl)
-
-  // 1. 有缓存且不需要更新，直接返回缓存
-  const cached = getFromCache<any[]>(cacheKey)
-  console.log('[DataService] cached recipes:', cached ? cached.length : 0)
-
-  const needUpdate = await shouldUpdateData()
-  console.log('[DataService] shouldUpdateData:', needUpdate)
-
-  if (cached && !needUpdate) {
-    console.log('[DataService] Using cached recipes')
-    return cached
+  if (cached && canUseCache(cached, remoteVersion)) {
+    return cached.data
   }
 
-  // 2. 需要更新或无缓存，尝试远程获取
-  if (DATA_CONFIG.baseUrl) {
-    console.log('[DataService] Fetching remote recipes from:', `${DATA_CONFIG.baseUrl}/recipes.json`)
-    const remote = await fetchRemoteData<any[]>('recipes.json')
-    if (remote) {
-      console.log('[DataService] Fetched remote recipes:', remote.length)
-      saveToCache(cacheKey, remote)
-      // 同时更新版本号
-      const remoteVersion = await checkRemoteVersion()
-      if (remoteVersion) saveVersion(remoteVersion)
-      return remote
-    } else {
-      console.log('[DataService] Failed to fetch remote recipes')
-    }
+  const remoteData = await fetchRemoteData<unknown>(endpoint)
+  if (validate(remoteData)) {
+    const version = remoteVersion || cached?.version || 'unversioned'
+    saveToCache(cacheKey, remoteData, version)
+    return remoteData
   }
 
-  // 3. 使用缓存（如果有）
-  console.log('[DataService] Returning cached or empty array')
-  return cached || []
+  return cached?.data ?? fallback
 }
 
-// 获取分类数据（立即返回缓存）
-export function getCategoriesCached(): any[] | null {
-  return getFromCache<any[]>(CACHE_KEYS.categories)
+function getRemoteBackedData<T>(
+  cacheKey: string,
+  endpoint: string,
+  fallback: T,
+  validate: DataValidator<T>
+): Promise<T> {
+  const pendingRequest = dataRequestPromises.get(cacheKey) as
+    | Promise<T>
+    | undefined
+  if (pendingRequest) {
+    return pendingRequest
+  }
+
+  const request = loadRemoteBackedData(
+    cacheKey,
+    endpoint,
+    fallback,
+    validate
+  ).finally(() => {
+    dataRequestPromises.delete(cacheKey)
+  })
+  dataRequestPromises.set(cacheKey, request)
+  return request
 }
 
-// 获取分类数据
-export async function getCategories(): Promise<any[]> {
-  const cacheKey = CACHE_KEYS.categories
-
-  console.log('[DataService] getCategories called')
-
-  const cached = getFromCache<any[]>(cacheKey)
-  console.log('[DataService] cached categories:', cached ? cached.length : 0)
-
-  const needUpdate = await shouldUpdateData()
-  if (cached && !needUpdate) {
-    console.log('[DataService] Using cached categories')
-    return cached
-  }
-
-  if (DATA_CONFIG.baseUrl) {
-    console.log('[DataService] Fetching remote categories from:', `${DATA_CONFIG.baseUrl}/categories.json`)
-    const remote = await fetchRemoteData<any[]>('categories.json')
-    if (remote) {
-      console.log('[DataService] Fetched remote categories:', remote.length)
-      saveToCache(cacheKey, remote)
-      return remote
-    } else {
-      console.log('[DataService] Failed to fetch remote categories')
-    }
-  }
-
-  console.log('[DataService] Returning cached or empty categories array')
-  return cached || []
+export function getRecipesCached(): Recipe[] | null {
+  return (
+    getCacheEntry<Recipe[]>(CACHE_KEYS.recipes, isRecipeList)?.data ?? null
+  )
 }
 
-// 获取知识文章数据
-export async function getTips(): Promise<any> {
-  const cacheKey = CACHE_KEYS.tips
-
-  const cached = getFromCache<any>(cacheKey)
-  if (cached && !await shouldUpdateData()) {
-    return cached
-  }
-
-  if (DATA_CONFIG.baseUrl) {
-    const remote = await fetchRemoteData<any>('tips.json')
-    if (remote) {
-      saveToCache(cacheKey, remote)
-      return remote
-    }
-  }
-
-  return cached || {}
+export function getCategoriesCached(): Category[] | null {
+  return (
+    getCacheEntry<Category[]>(CACHE_KEYS.categories, isCategoryList)?.data ??
+    null
+  )
 }
 
-// 预加载所有数据
+export function getRecipes(): Promise<Recipe[]> {
+  return getRemoteBackedData<Recipe[]>(
+    CACHE_KEYS.recipes,
+    'recipes.json',
+    [],
+    isRecipeList
+  )
+}
+
+export function getCategories(): Promise<Category[]> {
+  return getRemoteBackedData<Category[]>(
+    CACHE_KEYS.categories,
+    'categories.json',
+    [],
+    isCategoryList
+  )
+}
+
+export function getTips(): Promise<TipsData> {
+  return getRemoteBackedData<TipsData>(
+    CACHE_KEYS.tips,
+    'tips.json',
+    {
+      categories: [],
+      tips: [],
+    },
+    isTipsData
+  )
+}
+
 export async function preloadData(): Promise<void> {
-  await Promise.all([
-    getRecipes(),
-    getCategories(),
-    getTips(),
-  ])
+  await Promise.all([getRecipes(), getCategories(), getTips()])
 }
 
-// 清除缓存
 export function clearCache(): void {
   try {
-    Object.values(CACHE_KEYS).forEach(key => {
+    const cacheKeys = [...Object.values(CACHE_KEYS), ...LEGACY_CACHE_KEYS]
+    cacheKeys.forEach((key) => {
       Taro.removeStorageSync(key)
     })
   } catch (error) {
-    console.warn('Failed to clear cache:', error)
+    console.warn('[DataService] 清理缓存失败', error)
+  } finally {
+    remoteVersionPromise = null
+    dataRequestPromises.clear()
   }
 }
 
-// 检查是否有更新
 export async function checkForUpdates(): Promise<boolean> {
-  if (!DATA_CONFIG.baseUrl) return false
-
-  try {
-    const res = await Taro.request({
-      url: `${DATA_CONFIG.baseUrl}/version.json`,
-      method: 'GET',
-      dataType: 'json'
-    })
-
-    if (res.statusCode === 200 && res.data) {
-      const remoteVersion = (res.data as any).version
-      const localVersion = Taro.getStorageSync(CACHE_KEYS.version) || ''
-
-      if (remoteVersion !== localVersion) {
-        Taro.setStorageSync(CACHE_KEYS.version, remoteVersion)
-        clearCache()
-        return true
-      }
-    }
-    return false
-  } catch {
+  const remoteVersion = await getRemoteVersion(true)
+  if (!remoteVersion) {
     return false
   }
+
+  const cachedVersions = [
+    getCacheEntry<Recipe[]>(CACHE_KEYS.recipes, isRecipeList)?.version,
+    getCacheEntry<Category[]>(CACHE_KEYS.categories, isCategoryList)?.version,
+    getCacheEntry<TipsData>(CACHE_KEYS.tips, isTipsData)?.version,
+  ]
+  return cachedVersions.some((version) => version !== remoteVersion)
 }

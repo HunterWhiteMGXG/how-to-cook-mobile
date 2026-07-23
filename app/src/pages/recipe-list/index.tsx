@@ -1,13 +1,20 @@
 import { View, Text, Input, Image } from '@tarojs/components'
 import { useState, useMemo, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { useRecipeStore } from '@/store'
+import { useRecipeStore } from '@/store/recipe'
+import { ROUTES } from '@/constants'
 import './index.scss'
 
 export default function RecipeList() {
   const router = useRouter()
   const { category = 'all' } = router.params
-  const { recipes, categories, favorites, loadData } = useRecipeStore()
+  const {
+    recipes,
+    categories,
+    favorites,
+    isDataLoaded,
+    loadData,
+  } = useRecipeStore()
   const [searchText, setSearchText] = useState('')
   const [selectedDifficulty, setSelectedDifficulty] = useState<number | null>(null)
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
@@ -62,7 +69,7 @@ export default function RecipeList() {
   // 导航到菜谱详情
   const handleRecipeClick = (recipeId: string) => {
     Taro.navigateTo({
-      url: `/pages/recipe-detail/index?id=${encodeURIComponent(recipeId)}`
+      url: `${ROUTES.RECIPE_DETAIL}?id=${encodeURIComponent(recipeId)}`
     })
   }
 
@@ -113,7 +120,11 @@ export default function RecipeList() {
         </View>
       </View>
 
-      {filteredRecipes.length > 0 ? (
+      {!isDataLoaded ? (
+        <View className="empty">
+          <Text>加载中...</Text>
+        </View>
+      ) : filteredRecipes.length > 0 ? (
         <View className="recipe-grid">
           {filteredRecipes.map((recipe) => (
             <View

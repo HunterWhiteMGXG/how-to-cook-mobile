@@ -137,22 +137,6 @@ const config = {
       })
     }
   },
-  rn: {
-    appName: 'HowToCook',
-    output: {
-      iosSourceMapUrl: '',
-      iosSourcemapOutput: '../taro-native-shell/ios/main.map',
-      iosSourcemapSourcesRoot: '',
-      androidSourceMapUrl: '',
-      androidSourcemapOutput: '../taro-native-shell/android/app/src/main/assets/index.android.map',
-      androidSourcemapSourcesRoot: ''
-    },
-    postcss: {
-      cssModules: {
-        enable: false
-      }
-    }
-  }
 }
 
 export default function (merge) {

@@ -2,20 +2,38 @@ import { View, Text } from '@tarojs/components'
 import { useState, useMemo, useEffect } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
 import { getTips } from '@/services/dataService'
+import { ROUTES } from '@/constants'
+import type { TipsData } from '@/types'
 import './index.scss'
 
 export default function KnowledgeList() {
   const router = useRouter()
   const { category: initialCategory } = router.params
   const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'basic')
-  const [tipsData, setTipsData] = useState<any>({ tips: [], categories: [] })
+  const [tipsData, setTipsData] = useState<TipsData>({
+    tips: [],
+    categories: [],
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    getTips().then(data => {
-      if (data && data.tips) {
-        setTipsData(data)
-      }
-    })
+    let isMounted = true
+
+    getTips()
+      .then((data) => {
+        if (isMounted) {
+          setTipsData(data)
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   // 获取当前分类的文章
@@ -23,15 +41,10 @@ export default function KnowledgeList() {
     return tipsData.tips.filter(tip => tip.category === selectedCategory)
   }, [selectedCategory, tipsData])
 
-  // 获取当前分类信息
-  const currentCategoryInfo = useMemo(() => {
-    return tipsData.categories.find(cat => cat.id === selectedCategory)
-  }, [selectedCategory, tipsData])
-
   // 导航到知识详情
   const handleTipClick = (tipId: string) => {
     Taro.navigateTo({
-      url: `/pages/knowledge-detail/index?id=${encodeURIComponent(tipId)}`
+      url: `${ROUTES.KNOWLEDGE_DETAIL}?id=${encodeURIComponent(tipId)}`
     })
   }
 
@@ -69,7 +82,12 @@ export default function KnowledgeList() {
             <Text className="tip-arrow">›</Text>
           </View>
         ))}
-        {currentTips.length === 0 && (
+        {isLoading && (
+          <View className="empty">
+            <Text>加载中...</Text>
+          </View>
+        )}
+        {!isLoading && currentTips.length === 0 && (
           <View className="empty">
             <Text>暂无内容</Text>
           </View>

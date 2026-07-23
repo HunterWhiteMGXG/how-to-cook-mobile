@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { marked } = require(path.join(__dirname, '../app/node_modules/marked'));
+const { marked } = require('marked');
 
 // 配置 marked
 marked.setOptions({

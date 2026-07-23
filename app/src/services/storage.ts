@@ -1,4 +1,9 @@
 import Taro from '@tarojs/taro'
+import { STORAGE_KEYS } from '@/constants'
+import type { HistoryItem } from '@/types'
+import { clearCache } from './dataService'
+
+const STORE_KEYS = ['user-storage', 'cooking-storage'] as const
 
 class StorageService {
   /**
@@ -23,7 +28,7 @@ class StorageService {
     try {
       const res = await Taro.getStorage({ key })
       return res.data as T
-    } catch (error) {
+    } catch {
       return null
     }
   }
@@ -44,7 +49,9 @@ class StorageService {
    */
   async clear(): Promise<void> {
     try {
-      await Taro.clearStorage()
+      const keys = [...Object.values(STORAGE_KEYS), ...STORE_KEYS]
+      keys.forEach((key) => Taro.removeStorageSync(key))
+      clearCache()
     } catch (error) {
       console.error('Storage clear error:', error)
     }
@@ -54,7 +61,21 @@ class StorageService {
    * 获取收藏列表
    */
   async getFavorites(): Promise<string[]> {
-    return (await this.get<string[]>('favorites')) || []
+    const stored = await this.get<string[] | string>(STORAGE_KEYS.FAVORITES)
+    if (Array.isArray(stored)) {
+      return stored.filter((id): id is string => typeof id === 'string')
+    }
+    if (typeof stored === 'string') {
+      try {
+        const parsed: unknown = JSON.parse(stored)
+        return Array.isArray(parsed)
+          ? parsed.filter((id): id is string => typeof id === 'string')
+          : []
+      } catch {
+        return []
+      }
+    }
+    return []
   }
 
   /**
@@ -66,11 +87,11 @@ class StorageService {
 
     if (index > -1) {
       favorites.splice(index, 1)
-      await this.set('favorites', favorites)
+      await this.set(STORAGE_KEYS.FAVORITES, favorites)
       return false
     } else {
       favorites.push(recipeId)
-      await this.set('favorites', favorites)
+      await this.set(STORAGE_KEYS.FAVORITES, favorites)
       return true
     }
   }
@@ -79,20 +100,21 @@ class StorageService {
    * 添加浏览历史
    */
   async addHistory(recipeId: string): Promise<void> {
-    const history = (await this.get<any[]>('history')) || []
+    const history =
+      (await this.get<HistoryItem[]>(STORAGE_KEYS.HISTORY)) || []
     const newHistory = [
       { recipeId, viewedAt: Date.now() },
       ...history.filter((h) => h.recipeId !== recipeId),
     ].slice(0, 50) // 只保留最近50条
 
-    await this.set('history', newHistory)
+    await this.set(STORAGE_KEYS.HISTORY, newHistory)
   }
 
   /**
    * 获取浏览历史
    */
-  async getHistory(): Promise<any[]> {
-    return (await this.get<any[]>('history')) || []
+  async getHistory(): Promise<HistoryItem[]> {
+    return (await this.get<HistoryItem[]>(STORAGE_KEYS.HISTORY)) || []
   }
 }
 

@@ -1,14 +1,15 @@
 import { View, Text } from '@tarojs/components'
+import type { CommonEvent, ITouchEvent } from '@tarojs/components'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import Taro, { useRouter } from '@tarojs/taro'
-import { useRecipeStore } from '@/store'
+import { useRecipeStore } from '@/store/recipe'
 import './index.scss'
 
 export default function CookingMode() {
   const router = useRouter()
   const { id: encodedId } = router.params
   const id = encodedId ? decodeURIComponent(encodedId) : ''
-  const { recipes, loadData } = useRecipeStore()
+  const { recipes, isDataLoaded, loadData } = useRecipeStore()
   const [currentStep, setCurrentStep] = useState(0)
   const [showIngredients, setShowIngredients] = useState(false)
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null)
@@ -28,7 +29,7 @@ export default function CookingMode() {
   }, [recipes, id])
 
   // 如果数据还在加载中，显示加载提示
-  if (recipes.length === 0) {
+  if (!isDataLoaded) {
     return (
       <View className="cooking-mode">
         <View style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -93,16 +94,22 @@ export default function CookingMode() {
   }
 
   // 触摸事件处理
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX
+  const handleTouchStart = (event: CommonEvent) => {
+    const touch = (event as ITouchEvent).touches[0]
+    if (!touch) return
+
+    touchStartX.current = touch.clientX
     setIsDragging(true)
     setDragX(0)
   }
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = (event: CommonEvent) => {
     if (!isDragging) return
-    const currentX = e.touches[0].clientX
-    const diff = currentX - touchStartX.current
+
+    const touch = (event as ITouchEvent).touches[0]
+    if (!touch) return
+
+    const diff = touch.clientX - touchStartX.current
     setDragX(diff)
   }
 
@@ -164,9 +171,12 @@ export default function CookingMode() {
           <Text className="celebration-emoji">🎉</Text>
           <Text className="celebration-title">恭喜完成！</Text>
           <Text className="celebration-subtitle">{recipe.name}</Text>
-          <View className="celebration-btn" onClick={() => {
-            Taro.navigateBack()
-          }}>
+          <View
+            className="celebration-btn"
+            onClick={() => {
+              Taro.navigateBack()
+            }}
+          >
             <Text>返回菜谱</Text>
           </View>
         </View>

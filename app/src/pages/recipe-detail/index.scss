@@ -252,18 +252,12 @@
             margin-bottom: $space-md;
           }
 
-          .step-images {
-            display: flex;
-            gap: $space-sm;
-            flex-wrap: wrap;
-
-            .step-image {
-              width: 100px;
-              height: 100px;
-              background: $background;
-              border-radius: $radius-sm;
-              overflow: hidden;
-            }
+          .step-image {
+            width: 100px;
+            height: 100px;
+            background: $background;
+            border-radius: $radius-sm;
+            overflow: hidden;
           }
         }
       }

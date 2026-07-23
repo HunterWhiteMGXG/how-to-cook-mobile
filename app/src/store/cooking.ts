@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Timer } from '@/types'
+import { taroStorage } from './taroStorage'
 
 interface CookingState {
   // 做菜状态
@@ -28,7 +29,7 @@ interface CookingState {
 
 export const useCookingStore = create<CookingState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       isActive: false,
       recipeId: null,
       currentStep: 0,
@@ -93,7 +94,7 @@ export const useCookingStore = create<CookingState>()(
     }),
     {
       name: 'cooking-storage',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => taroStorage),
     }
   )
 )

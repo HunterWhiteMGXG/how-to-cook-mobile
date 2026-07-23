@@ -7,7 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const glob = require('glob');
+const { globSync } = require('glob');
 
 // 配置
 const CONFIG = {
@@ -473,7 +473,7 @@ function main() {
 
   // 查找所有 Markdown 文件
   const pattern = path.join(CONFIG.dishesDir, '**', '*.md');
-  const mdFiles = glob.sync(pattern, {
+  const mdFiles = globSync(pattern, {
     ignore: ['**/README.md', '**/template/**', '**/node_modules/**'],
   });
 
